@@ -11,32 +11,37 @@ from matplotlib import style
 import pickle
 
 def main():
+    style.use('ggplot')
+
     df = quandl.get('WIKI/GOOGL')
     df = df[['Adj. Open','Adj. High','Adj. Low','Adj. Close','Adj. Volume']]
     df["HL_PCT"] = ((df['Adj. High'] - df['Adj. Low']) / df['Adj. Close']) * 100.0
     df["PCT_Change"] = ((df['Adj. Close'] - df['Adj. Open']) / df['Adj. Open']) * 100.0
+
     df = df[['Adj. Close', 'HL_PCT','PCT_Change','Adj. Volume']]
+
     forecast_col = 'Adj. Close'
     df.fillna(-99999, inplace=True)
 
     forecast_out = int(math.ceil(0.1*len(df)))
-    # print(forecast_out)
 
     df['label'] = df[forecast_col].shift(-forecast_out)
 
-    X = np.array(df.drop(['label'], 1))
+    X = np.array(df.drop(['label', 'Adj. Close'], 1))
     X = preprocessing.scale(X)
-    X = X[:-forecast_out]
     X_Lately = X[-forecast_out:]
+    X = X[:-forecast_out]
     df.dropna(inplace=True)
     Y = np.array(df['label'])
 
+    print(len(X), len(Y))
+
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
 
-    # clf = LinearRegression(n_jobs=-1)
-    # clf.fit(X_train, Y_train)
-    # with open('LinearRegression.pickle','wb') as f:
-    #     pickle.dump(clf, f)
+    clf = LinearRegression(n_jobs=-1)
+    clf.fit(X_train, Y_train)
+    with open('LinearRegression.pickle','wb') as f:
+        pickle.dump(clf, f)
 
     pickle_in = open('LinearRegression.pickle', 'rb')
     clf = pickle.load(pickle_in)
@@ -65,7 +70,7 @@ def main():
     plt.ylabel('Price')
     plt.show()
 
-    # print(len(X), len(Y))
+
 
 
 if __name__ == "__main__":
